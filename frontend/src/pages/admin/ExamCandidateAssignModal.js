@@ -29,7 +29,7 @@ const ExamCandidateAssignModal = ({ exam, isOpen, onClose, onAssigned }) => {
         setSelectedIds(preSelected);
       } catch (err) {
         console.error('Failed to load candidates for assignment', err);
-        setError('Failed to load candidate list.');
+        setError(err.message || 'Failed to load candidate list.');
       } finally {
         setLoading(false);
       }
@@ -76,7 +76,7 @@ const ExamCandidateAssignModal = ({ exam, isOpen, onClose, onAssigned }) => {
       onClose();
     } catch (err) {
       console.error('Failed to save assignments', err);
-      setError(err.response?.data?.message || 'Failed to save assignments.');
+      setError(err.message || 'Failed to save assignments.');
     } finally {
       setSaving(false);
     }

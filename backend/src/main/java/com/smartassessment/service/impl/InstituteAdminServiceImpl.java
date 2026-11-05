@@ -5,6 +5,7 @@ import com.smartassessment.dto.common.PagedResponse;
 import com.smartassessment.dto.institute.AssignExamRequestDto;
 import com.smartassessment.dto.institute.CandidateDto;
 import com.smartassessment.dto.institute.InstituteDto;
+import com.smartassessment.entity.ApprovalStatus;
 import com.smartassessment.entity.Exam;
 import com.smartassessment.entity.Institute;
 import com.smartassessment.entity.Role;
@@ -53,13 +54,34 @@ public class InstituteAdminServiceImpl implements InstituteAdminService {
             return user.getInstitute();
         }
 
-        return instituteRepository.findByAdminUser(user)
-                .orElseThrow(() -> new BadRequestException("Current user is not associated with any institute."));
+        Institute byAdmin = instituteRepository.findByAdminUser(user).orElse(null);
+        if (byAdmin != null) {
+            return byAdmin;
+        }
+
+        if (user.getRole() == Role.ROLE_SUPER_ADMIN) {
+            return instituteRepository.findAll().stream().findFirst().orElse(null);
+        }
+
+        throw new BadRequestException("Current user is not associated with any institute.");
     }
 
     @Override
     @Transactional(readOnly = true)
     public InstituteDto getCurrentInstitute(UserPrincipal currentUser) {
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUser.getId()));
+
+        if (user.getRole() == Role.ROLE_SUPER_ADMIN && user.getInstitute() == null) {
+            return InstituteDto.builder()
+                    .name("Main Platform Administration")
+                    .code("GLOBAL-ADMIN")
+                    .status(ApprovalStatus.APPROVED)
+                    .studentCount((int) userRepository.countByRole(Role.ROLE_STUDENT))
+                    .examCount((int) examRepository.count())
+                    .build();
+        }
+
         Institute institute = getInstituteForUser(currentUser);
         return mapToDto(institute);
     }
@@ -67,9 +89,18 @@ public class InstituteAdminServiceImpl implements InstituteAdminService {
     @Override
     @Transactional(readOnly = true)
     public PagedResponse<CandidateDto> getInstituteCandidates(UserPrincipal currentUser, int page, int size) {
-        Institute institute = getInstituteForUser(currentUser);
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUser.getId()));
+
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "fullName"));
-        Page<User> candidatePage = userRepository.findByInstituteAndRole(institute, Role.ROLE_STUDENT, pageable);
+        Page<User> candidatePage;
+
+        if (user.getRole() == Role.ROLE_SUPER_ADMIN && user.getInstitute() == null) {
+            candidatePage = userRepository.findByRole(Role.ROLE_STUDENT, pageable);
+        } else {
+            Institute institute = getInstituteForUser(currentUser);
+            candidatePage = userRepository.findByInstituteAndRole(institute, Role.ROLE_STUDENT, pageable);
+        }
 
         List<CandidateDto> candidates = candidatePage.getContent().stream()
                 .map(u -> new CandidateDto(u.getId(), u.getUsername(), u.getFullName(), u.getEmail(), false))
@@ -88,15 +119,30 @@ public class InstituteAdminServiceImpl implements InstituteAdminService {
     @Override
     @Transactional(readOnly = true)
     public List<CandidateDto> getExamCandidateAssignments(UserPrincipal currentUser, Long examId) {
-        Institute institute = getInstituteForUser(currentUser);
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUser.getId()));
+
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam", "id", examId));
 
-        if (exam.getInstitute() != null && !exam.getInstitute().getId().equals(institute.getId())) {
-            throw new BadRequestException("This examination belongs to another institute.");
+        List<User> students;
+        if (user.getRole() == Role.ROLE_SUPER_ADMIN) {
+            // Super Admin can inspect and assign candidates from the exam's institute or platform-wide
+            if (exam.getInstitute() != null) {
+                students = userRepository.findByInstituteAndRole(exam.getInstitute(), Role.ROLE_STUDENT);
+            } else {
+                students = userRepository.findAll().stream()
+                        .filter(u -> u.getRole() == Role.ROLE_STUDENT)
+                        .collect(Collectors.toList());
+            }
+        } else {
+            Institute institute = getInstituteForUser(currentUser);
+            if (exam.getInstitute() != null && !exam.getInstitute().getId().equals(institute.getId())) {
+                throw new BadRequestException("This examination belongs to another institute.");
+            }
+            students = userRepository.findByInstituteAndRole(institute, Role.ROLE_STUDENT);
         }
 
-        List<User> students = userRepository.findByInstituteAndRole(institute, Role.ROLE_STUDENT);
         Set<Long> assignedIds = exam.getAssignedCandidates().stream()
                 .map(User::getId)
                 .collect(Collectors.toSet());
@@ -117,25 +163,28 @@ public class InstituteAdminServiceImpl implements InstituteAdminService {
     @Override
     @Transactional
     public ApiResponse assignCandidatesToExam(UserPrincipal currentUser, Long examId, AssignExamRequestDto requestDto) {
-        Institute institute = getInstituteForUser(currentUser);
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUser.getId()));
+
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam", "id", examId));
 
-        if (exam.getInstitute() != null && !exam.getInstitute().getId().equals(institute.getId())) {
-            throw new BadRequestException("You cannot manage assignments for an exam belonging to another institute.");
-        }
-
-        if (exam.getInstitute() == null) {
-            exam.setInstitute(institute);
+        if (user.getRole() != Role.ROLE_SUPER_ADMIN) {
+            Institute institute = getInstituteForUser(currentUser);
+            if (exam.getInstitute() != null && !exam.getInstitute().getId().equals(institute.getId())) {
+                throw new BadRequestException("You cannot manage assignments for an exam belonging to another institute.");
+            }
+            if (exam.getInstitute() == null) {
+                exam.setInstitute(institute);
+            }
         }
 
         if (requestDto.isAssignAll()) {
             exam.setAssignAllStudents(true);
             exam.getAssignedCandidates().clear();
             examRepository.save(exam);
-            log.info("Institute admin {} set exam {} to ALL students of institute {}",
-                    currentUser.getUsername(), examId, institute.getName());
-            return new ApiResponse(true, "Exam assigned to all candidates in " + institute.getName());
+            log.info("User {} set exam {} to ALL candidates", currentUser.getUsername(), examId);
+            return new ApiResponse(true, "Exam assigned to all eligible candidates.");
         }
 
         exam.setAssignAllStudents(false);
@@ -144,14 +193,19 @@ public class InstituteAdminServiceImpl implements InstituteAdminService {
         if (requestDto.getCandidateIds() != null && !requestDto.getCandidateIds().isEmpty()) {
             List<User> candidates = userRepository.findAllById(requestDto.getCandidateIds());
             for (User candidate : candidates) {
-                if (candidate.getInstitute() != null && candidate.getInstitute().getId().equals(institute.getId())) {
+                if (user.getRole() == Role.ROLE_SUPER_ADMIN) {
                     exam.getAssignedCandidates().add(candidate);
+                } else {
+                    Institute userInst = getInstituteForUser(currentUser);
+                    if (candidate.getInstitute() != null && candidate.getInstitute().getId().equals(userInst.getId())) {
+                        exam.getAssignedCandidates().add(candidate);
+                    }
                 }
             }
         }
 
         examRepository.save(exam);
-        log.info("Institute admin {} assigned {} specific candidate(s) to exam {}",
+        log.info("User {} assigned {} candidate(s) to exam {}",
                 currentUser.getUsername(), exam.getAssignedCandidates().size(), examId);
 
         return new ApiResponse(true, "Exam assigned to " + exam.getAssignedCandidates().size() + " selected candidate(s).");
@@ -160,6 +214,21 @@ public class InstituteAdminServiceImpl implements InstituteAdminService {
     @Override
     @Transactional(readOnly = true)
     public Map<String, Object> getInstituteStats(UserPrincipal currentUser) {
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUser.getId()));
+
+        if (user.getRole() == Role.ROLE_SUPER_ADMIN && user.getInstitute() == null) {
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("instituteId", 0L);
+            stats.put("instituteName", "Main Platform Administration");
+            stats.put("instituteCode", "GLOBAL-ADMIN");
+            stats.put("status", ApprovalStatus.APPROVED);
+            stats.put("rejectionReason", null);
+            stats.put("totalCandidates", userRepository.countByRole(Role.ROLE_STUDENT));
+            stats.put("totalExams", examRepository.count());
+            return stats;
+        }
+
         Institute institute = getInstituteForUser(currentUser);
         Map<String, Object> stats = new HashMap<>();
         stats.put("instituteId", institute.getId());
@@ -173,6 +242,7 @@ public class InstituteAdminServiceImpl implements InstituteAdminService {
     }
 
     private InstituteDto mapToDto(Institute institute) {
+        if (institute == null) return null;
         int studentCount = (int) userRepository.countByInstituteAndRole(institute, Role.ROLE_STUDENT);
         int examCount = (int) examRepository.countByInstitute(institute);
 
