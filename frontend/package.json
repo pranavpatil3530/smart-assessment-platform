@@ -2,6 +2,7 @@
   "name": "smart-assessment-frontend",
   "version": "1.0.0",
   "private": true,
+  "homepage": "https://pranavpatil3530.github.io/smart-assessment-platform",
   "dependencies": {
     "axios": "^1.7.7",
     "bootstrap": "^5.3.3",
@@ -12,11 +13,14 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
   "devDependencies": {
+    "gh-pages": "^6.3.0",
     "react-scripts": "5.0.1"
   },
   "browserslist": {
