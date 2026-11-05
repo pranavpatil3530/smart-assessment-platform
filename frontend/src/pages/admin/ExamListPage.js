@@ -341,6 +341,7 @@ const ExamListPage = () => {
           setIsModalOpen(false);
           setExamToEdit(null);
         }}
+        onSave={fetchExams}
         onSaved={fetchExams}
         examToEdit={examToEdit}
         categories={categories}

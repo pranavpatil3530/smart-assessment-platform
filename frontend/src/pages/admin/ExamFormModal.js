@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { examApi } from '../../api/examApi';
 
-const ExamFormModal = ({ isOpen, onClose, onSave, examToEdit, categories }) => {
+const ExamFormModal = ({ isOpen, onClose, onSave, onSaved, examToEdit, categories }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -88,8 +88,13 @@ const ExamFormModal = ({ isOpen, onClose, onSave, examToEdit, categories }) => {
       } else {
         await examApi.createExam(payload);
       }
-      onSave();
-      onClose();
+      const notifySaved = onSaved || onSave;
+      if (typeof notifySaved === 'function') {
+        notifySaved();
+      }
+      if (typeof onClose === 'function') {
+        onClose();
+      }
     } catch (err) {
       setError(err.message || 'Failed to save examination.');
     } finally {
