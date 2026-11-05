@@ -17,17 +17,20 @@ public class DataInitializer implements CommandLineRunner {
     private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 
     private final UserRepository userRepository;
+    private final InstituteRepository instituteRepository;
     private final CategoryRepository categoryRepository;
     private final ExamRepository examRepository;
     private final ExamAttemptRepository examAttemptRepository;
     private final PasswordEncoder passwordEncoder;
 
     public DataInitializer(UserRepository userRepository,
+                           InstituteRepository instituteRepository,
                            CategoryRepository categoryRepository,
                            ExamRepository examRepository,
                            ExamAttemptRepository examAttemptRepository,
                            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.instituteRepository = instituteRepository;
         this.categoryRepository = categoryRepository;
         this.examRepository = examRepository;
         this.examAttemptRepository = examAttemptRepository;
@@ -44,17 +47,80 @@ public class DataInitializer implements CommandLineRunner {
 
         log.info("Starting initial seed data population for Smart Online Assessment Platform...");
 
-        // 1. Seed Users
-        User admin = User.builder()
+        // 1. Seed Main Super Admin (Only ONE Main Admin)
+        User superAdmin = User.builder()
+                .username("superadmin")
+                .email("superadmin@smartassessment.com")
+                .password(passwordEncoder.encode("Admin@123"))
+                .fullName("Main Platform Super Admin")
+                .role(Role.ROLE_SUPER_ADMIN)
+                .enabled(true)
+                .approvalStatus(ApprovalStatus.APPROVED)
+                .build();
+        userRepository.save(superAdmin);
+
+        User legacyAdmin = User.builder()
                 .username("admin")
                 .email("admin@smartassessment.com")
                 .password(passwordEncoder.encode("Admin@123"))
-                .fullName("System Administrator")
-                .role(Role.ROLE_ADMIN)
+                .fullName("Platform Administrator")
+                .role(Role.ROLE_SUPER_ADMIN)
                 .enabled(true)
+                .approvalStatus(ApprovalStatus.APPROVED)
                 .build();
-        userRepository.save(admin);
+        userRepository.save(legacyAdmin);
 
+        // 2. Seed Approved Institute (MIT)
+        Institute mitInstitute = Institute.builder()
+                .name("MIT Institute of Technology")
+                .code("MIT-TECH")
+                .description("Premier institution for engineering and technical education.")
+                .contactEmail("mit.admin@example.com")
+                .contactPhone("+1 617-253-1000")
+                .status(ApprovalStatus.APPROVED)
+                .build();
+
+        User mitAdmin = User.builder()
+                .username("mit_admin")
+                .email("mit.admin@example.com")
+                .password(passwordEncoder.encode("Admin@123"))
+                .fullName("MIT Assessment Director")
+                .role(Role.ROLE_INSTITUTE_ADMIN)
+                .enabled(true)
+                .approvalStatus(ApprovalStatus.APPROVED)
+                .institute(mitInstitute)
+                .build();
+
+        mitInstitute.setAdminUser(mitAdmin);
+        userRepository.save(mitAdmin);
+        instituteRepository.save(mitInstitute);
+
+        // 3. Seed Pending Institute (Stanford Academy) - Demonstrates Main Admin Approval workflow!
+        Institute stanfordInstitute = Institute.builder()
+                .name("Stanford Academy")
+                .code("STAN-01")
+                .description("Applied computing and data science academy awaiting accreditation.")
+                .contactEmail("stanford.admin@example.com")
+                .contactPhone("+1 650-723-2300")
+                .status(ApprovalStatus.PENDING)
+                .build();
+
+        User stanfordAdmin = User.builder()
+                .username("stanford_admin")
+                .email("stanford.admin@example.com")
+                .password(passwordEncoder.encode("Admin@123"))
+                .fullName("Stanford Dean")
+                .role(Role.ROLE_INSTITUTE_ADMIN)
+                .enabled(false) // Cannot sign in until Main Admin approves
+                .approvalStatus(ApprovalStatus.PENDING)
+                .institute(stanfordInstitute)
+                .build();
+
+        stanfordInstitute.setAdminUser(stanfordAdmin);
+        userRepository.save(stanfordAdmin);
+        instituteRepository.save(stanfordInstitute);
+
+        // 4. Seed Candidates (Students) enrolled in MIT Institute
         User student1 = User.builder()
                 .username("student1")
                 .email("john.doe@example.com")
@@ -62,6 +128,8 @@ public class DataInitializer implements CommandLineRunner {
                 .fullName("John Doe")
                 .role(Role.ROLE_STUDENT)
                 .enabled(true)
+                .approvalStatus(ApprovalStatus.APPROVED)
+                .institute(mitInstitute)
                 .build();
         userRepository.save(student1);
 
@@ -72,10 +140,12 @@ public class DataInitializer implements CommandLineRunner {
                 .fullName("Priya Sharma")
                 .role(Role.ROLE_STUDENT)
                 .enabled(true)
+                .approvalStatus(ApprovalStatus.APPROVED)
+                .institute(mitInstitute)
                 .build();
         userRepository.save(student2);
 
-        // 2. Seed Categories
+        // 5. Seed Categories
         Category javaCategory = Category.builder()
                 .name("Core Java & Concurrency")
                 .description("Assessment of Java 17+ core concepts, OOP principles, JVM memory model, and concurrency.")
@@ -94,7 +164,7 @@ public class DataInitializer implements CommandLineRunner {
                 .build();
         categoryRepository.save(dsaCategory);
 
-        // 3. Seed Exam 1: Java Technical Screening
+        // 6. Seed Exam 1: Assigned to ALL students of MIT
         Exam javaExam = Exam.builder()
                 .title("Java Full Stack Core Technical Assessment")
                 .description("Comprehensive 30-minute evaluation covering Java fundamentals, memory management, multithreading, and basic coding problem.")
@@ -107,6 +177,8 @@ public class DataInitializer implements CommandLineRunner {
                 .published(true)
                 .randomizeQuestions(true)
                 .randomizeOptions(true)
+                .institute(mitInstitute)
+                .assignAllStudents(true)
                 .build();
 
         // Question 1 (MCQ)
@@ -158,85 +230,83 @@ public class DataInitializer implements CommandLineRunner {
         javaExam.addQuestion(q3);
 
         // Question 4 (Coding Question)
+        CodingProblem codingProblem = CodingProblem.builder()
+                .starterCode("import java.util.*;\n\npublic class Solution {\n    public static int findDuplicate(int[] nums) {\n        // Write your solution here\n        return -1;\n    }\n}")
+                .language("java")
+                .constraints("2 <= nums.length <= 10^5\nAll integers appear once except one duplicate which appears twice.")
+                .sampleInput("[1, 3, 4, 2, 2]")
+                .sampleOutput("2")
+                .testCasesJson("[{\"input\": \"[1, 3, 4, 2, 2]\", \"output\": \"2\"}, {\"input\": \"[3, 1, 3, 4, 2]\", \"output\": \"3\"}]")
+                .build();
+
         Question q4 = Question.builder()
                 .exam(javaExam)
                 .questionType(QuestionType.CODING)
-                .content("Implement a method 'findFirstNonRepeatingChar(String s)' that returns the first non-repeating character in a given string. If none exists, return '_'.")
+                .content("Find the Duplicate Number: Given an array of integers containing n + 1 integers where each integer is in the range [1, n] inclusive, find the duplicate number without modifying the array.")
                 .marks(8.0)
                 .negativeMarks(0.0)
-                .explanation("Optimal solution uses a character frequency array or LinkedHashMap in O(N) time and O(1) space.")
+                .explanation("Floyd's Cycle-Finding Algorithm (Tortoise and Hare) allows finding the duplicate in O(n) time and O(1) space.")
+                .codingProblem(codingProblem)
                 .build();
-
-        CodingProblem codingProblem = CodingProblem.builder()
-                .language("Java")
-                .starterCode(
-                        "public class Solution {\n" +
-                        "    public static char findFirstNonRepeatingChar(String s) {\n" +
-                        "        // Your code here\n" +
-                        "        return '_';\n" +
-                        "    }\n" +
-                        "}"
-                )
-                .constraints("1 <= s.length <= 10^5; s contains only lowercase English letters.")
-                .sampleInput("\"swiss\"")
-                .sampleOutput("'w'")
-                .testCasesJson("[{\"input\":\"swiss\",\"output\":\"w\"},{\"input\":\"aabbcc\",\"output\":\"_\"}]")
-                .build();
-        q4.setCodingProblem(codingProblem);
+        codingProblem.setQuestion(q4);
         javaExam.addQuestion(q4);
 
         examRepository.save(javaExam);
 
-        // 4. Seed Exam 2: Spring Boot Enterprise
+        // 7. Seed Exam 2: Assigned specifically to student1 only (selective assignment by Institute Admin)
         Exam springExam = Exam.builder()
-                .title("Spring Boot & JPA Enterprise Architecture Test")
-                .description("Advanced test evaluating Spring Bean lifecycle, @Transactional propagation, Spring Security filter chains, and N+1 query problem solutions.")
+                .title("Spring Boot 3 & Cloud Native Architecture")
+                .description("Advanced assessment on Spring Boot auto-configuration, Bean lifecycle, Spring Data JPA, and security filters.")
                 .category(springCategory)
-                .durationMinutes(25)
-                .totalMarks(15)
-                .passingMarks(10)
-                .negativeMarkingRate(0.5)
+                .durationMinutes(20)
+                .totalMarks(10)
+                .passingMarks(6)
+                .negativeMarkingRate(0.25)
                 .maxAttempts(2)
                 .published(true)
-                .randomizeQuestions(true)
-                .randomizeOptions(true)
+                .randomizeQuestions(false)
+                .randomizeOptions(false)
+                .institute(mitInstitute)
+                .assignAllStudents(false)
                 .build();
+
+        springExam.getAssignedCandidates().add(student1);
 
         Question sq1 = Question.builder()
                 .exam(springExam)
                 .questionType(QuestionType.MCQ)
-                .content("How can developers avoid the JPA 'N+1 Query Problem' when fetching an entity with lazy-loaded collections?")
-                .marks(5.0)
-                .negativeMarks(1.0)
-                .explanation("JOIN FETCH in JPQL or using @EntityGraph forces Hibernate to retrieve the parent and associated collection in a single SQL query.")
+                .content("Which annotation triggers the Spring Boot auto-configuration mechanism?")
+                .marks(3.0)
+                .negativeMarks(0.75)
+                .explanation("@EnableAutoConfiguration (or @SpringBootApplication which includes it) tells Spring Boot to automatically configure Beans based on classpath dependencies.")
                 .build();
 
-        sq1.addOption(QuestionOption.builder().optionText("Switching FetchType from LAZY to EAGER").optionOrder(1).correct(false).build());
-        sq1.addOption(QuestionOption.builder().optionText("Using JPQL 'JOIN FETCH' or Spring Data JPA '@EntityGraph'").optionOrder(2).correct(true).build());
-        sq1.addOption(QuestionOption.builder().optionText("Wrapping the query inside @Transactional(readOnly = true)").optionOrder(3).correct(false).build());
-        sq1.addOption(QuestionOption.builder().optionText("Enabling second-level cache in application.properties").optionOrder(4).correct(false).build());
+        sq1.addOption(QuestionOption.builder().optionText("@EnableAutoConfiguration").optionOrder(1).correct(true).build());
+        sq1.addOption(QuestionOption.builder().optionText("@ComponentScan").optionOrder(2).correct(false).build());
+        sq1.addOption(QuestionOption.builder().optionText("@Configuration").optionOrder(3).correct(false).build());
+        sq1.addOption(QuestionOption.builder().optionText("@EnableWebMvc").optionOrder(4).correct(false).build());
         springExam.addQuestion(sq1);
 
         Question sq2 = Question.builder()
                 .exam(springExam)
                 .questionType(QuestionType.MCQ)
-                .content("In Spring Security 6, how does OncePerRequestFilter ensure each HTTP request is filtered only once?")
-                .marks(5.0)
-                .negativeMarks(1.0)
-                .explanation("OncePerRequestFilter checks and marks a custom request attribute on the HttpServletRequest so internal forwards or dispatches don't re-trigger filtering.")
+                .content("What is the default Bean scope in Spring Framework?")
+                .marks(3.0)
+                .negativeMarks(0.75)
+                .explanation("The singleton scope is the default scope in Spring. Only one shared instance of a singleton bean is created per ApplicationContext.")
                 .build();
 
-        sq2.addOption(QuestionOption.builder().optionText("By checking a unique request attribute in the HttpServletRequest").optionOrder(1).correct(true).build());
-        sq2.addOption(QuestionOption.builder().optionText("By keeping thread-local state in a ConcurrentHashMap").optionOrder(2).correct(false).build());
-        sq2.addOption(QuestionOption.builder().optionText("By caching the response in the HTTP session").optionOrder(3).correct(false).build());
-        sq2.addOption(QuestionOption.builder().optionText("By synchronizing on the servlet context").optionOrder(4).correct(false).build());
+        sq2.addOption(QuestionOption.builder().optionText("Singleton").optionOrder(1).correct(true).build());
+        sq2.addOption(QuestionOption.builder().optionText("Prototype").optionOrder(2).correct(false).build());
+        sq2.addOption(QuestionOption.builder().optionText("Request").optionOrder(3).correct(false).build());
+        sq2.addOption(QuestionOption.builder().optionText("Session").optionOrder(4).correct(false).build());
         springExam.addQuestion(sq2);
 
         Question sq3 = Question.builder()
                 .exam(springExam)
                 .questionType(QuestionType.MCQ)
                 .content("What is the difference between @Controller and @RestController in Spring MVC?")
-                .marks(5.0)
+                .marks(4.0)
                 .negativeMarks(1.0)
                 .explanation("@RestController is a composed annotation that combines @Controller and @ResponseBody, automatically writing return values directly to the HTTP response body.")
                 .build();
@@ -249,7 +319,7 @@ public class DataInitializer implements CommandLineRunner {
 
         examRepository.save(springExam);
 
-        // 5. Seed historical attempt
+        // 8. Seed historical attempt
         ExamAttempt attempt = ExamAttempt.builder()
                 .user(student1)
                 .exam(javaExam)
@@ -295,6 +365,10 @@ public class DataInitializer implements CommandLineRunner {
 
         examAttemptRepository.save(attempt);
 
-        log.info("Initial seed data successfully loaded! Admin: admin/Admin@123 | Student: student1/Student@123");
+        log.info("Initial seed data successfully loaded!");
+        log.info("Main Admin (Super): superadmin / Admin@123");
+        log.info("Approved Institute Admin: mit_admin / Admin@123 (MIT-TECH)");
+        log.info("Pending Institute Admin: stanford_admin / Admin@123 (STAN-01 - Pending Approval)");
+        log.info("Candidate Students: student1 / Student@123, student2 / Student@123 (MIT)");
     }
 }

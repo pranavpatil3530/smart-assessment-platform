@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading, isSuperAdmin, isInstituteAdmin } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -20,13 +20,23 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user?.role)) {
-    // If student tries to visit admin page, redirect to student dashboard
-    if (user?.role === 'ROLE_STUDENT') {
-      return <Navigate to="/dashboard" replace />;
+  if (allowedRoles && allowedRoles.length > 0) {
+    const role = user?.role;
+    const hasDirectMatch = allowedRoles.includes(role);
+    const hasAdminEquiv = allowedRoles.includes('ROLE_ADMIN') && (isSuperAdmin || isInstituteAdmin);
+
+    if (!hasDirectMatch && !hasAdminEquiv) {
+      if (isSuperAdmin) {
+        return <Navigate to="/super-admin/dashboard" replace />;
+      }
+      if (isInstituteAdmin) {
+        return <Navigate to="/admin/exams" replace />;
+      }
+      if (role === 'ROLE_STUDENT') {
+        return <Navigate to="/dashboard" replace />;
+      }
+      return <Navigate to="/" replace />;
     }
-    // If admin, redirect to admin dashboard
-    return <Navigate to="/admin/dashboard" replace />;
   }
 
   return children;

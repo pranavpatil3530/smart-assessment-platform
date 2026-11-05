@@ -21,6 +21,10 @@ public class ExamDetailResponseDto {
     private int totalQuestions;
     private LocalDateTime createdAt;
     private List<QuestionResponseDto> questions;
+    private Long instituteId;
+    private String instituteName;
+    private boolean assignAllStudents = true;
+    private int assignedCandidatesCount;
 
     public ExamDetailResponseDto() {
     }
@@ -30,6 +34,18 @@ public class ExamDetailResponseDto {
                                  Double negativeMarkingRate, Integer maxAttempts, boolean published,
                                  boolean randomizeQuestions, boolean randomizeOptions, int totalQuestions,
                                  LocalDateTime createdAt, List<QuestionResponseDto> questions) {
+        this(id, title, description, categoryId, categoryName, durationMinutes, totalMarks, passingMarks,
+             negativeMarkingRate, maxAttempts, published, randomizeQuestions, randomizeOptions, totalQuestions,
+             createdAt, questions, null, null, true, 0);
+    }
+
+    public ExamDetailResponseDto(Long id, String title, String description, Long categoryId, String categoryName,
+                                 Integer durationMinutes, Integer totalMarks, Integer passingMarks,
+                                 Double negativeMarkingRate, Integer maxAttempts, boolean published,
+                                 boolean randomizeQuestions, boolean randomizeOptions, int totalQuestions,
+                                 LocalDateTime createdAt, List<QuestionResponseDto> questions,
+                                 Long instituteId, String instituteName, boolean assignAllStudents,
+                                 int assignedCandidatesCount) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -46,6 +62,10 @@ public class ExamDetailResponseDto {
         this.totalQuestions = totalQuestions;
         this.createdAt = createdAt;
         this.questions = questions;
+        this.instituteId = instituteId;
+        this.instituteName = instituteName;
+        this.assignAllStudents = assignAllStudents;
+        this.assignedCandidatesCount = assignedCandidatesCount;
     }
 
     public Long getId() {
@@ -176,6 +196,38 @@ public class ExamDetailResponseDto {
         this.questions = questions;
     }
 
+    public Long getInstituteId() {
+        return instituteId;
+    }
+
+    public void setInstituteId(Long instituteId) {
+        this.instituteId = instituteId;
+    }
+
+    public String getInstituteName() {
+        return instituteName;
+    }
+
+    public void setInstituteName(String instituteName) {
+        this.instituteName = instituteName;
+    }
+
+    public boolean isAssignAllStudents() {
+        return assignAllStudents;
+    }
+
+    public void setAssignAllStudents(boolean assignAllStudents) {
+        this.assignAllStudents = assignAllStudents;
+    }
+
+    public int getAssignedCandidatesCount() {
+        return assignedCandidatesCount;
+    }
+
+    public void setAssignedCandidatesCount(int assignedCandidatesCount) {
+        this.assignedCandidatesCount = assignedCandidatesCount;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -197,6 +249,10 @@ public class ExamDetailResponseDto {
         private int totalQuestions;
         private LocalDateTime createdAt;
         private List<QuestionResponseDto> questions;
+        private Long instituteId;
+        private String instituteName;
+        private boolean assignAllStudents = true;
+        private int assignedCandidatesCount;
 
         public Builder id(Long id) {
             this.id = id;
@@ -278,10 +334,31 @@ public class ExamDetailResponseDto {
             return this;
         }
 
+        public Builder instituteId(Long instituteId) {
+            this.instituteId = instituteId;
+            return this;
+        }
+
+        public Builder instituteName(String instituteName) {
+            this.instituteName = instituteName;
+            return this;
+        }
+
+        public Builder assignAllStudents(boolean assignAllStudents) {
+            this.assignAllStudents = assignAllStudents;
+            return this;
+        }
+
+        public Builder assignedCandidatesCount(int assignedCandidatesCount) {
+            this.assignedCandidatesCount = assignedCandidatesCount;
+            return this;
+        }
+
         public ExamDetailResponseDto build() {
             return new ExamDetailResponseDto(id, title, description, categoryId, categoryName,
                     durationMinutes, totalMarks, passingMarks, negativeMarkingRate, maxAttempts,
-                    published, randomizeQuestions, randomizeOptions, totalQuestions, createdAt, questions);
+                    published, randomizeQuestions, randomizeOptions, totalQuestions, createdAt, questions,
+                    instituteId, instituteName, assignAllStudents, assignedCandidatesCount);
         }
     }
 }

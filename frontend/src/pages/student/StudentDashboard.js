@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { examApi } from '../../api/examApi';
+import { useAuth } from '../../context/AuthContext';
 import Pagination from '../../components/Pagination';
 import ExamInstructionModal from './ExamInstructionModal';
 
 const StudentDashboard = () => {
+  const { user } = useAuth();
   const [exams, setExams] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -73,19 +75,29 @@ const StudentDashboard = () => {
   return (
     <div className="container py-4">
       {/* Banner */}
-      <div className="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 bg-gradient" style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)' }}>
+      <div
+        className="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 bg-gradient"
+        style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)' }}
+      >
         <div className="card-body p-4 p-md-5 text-white">
           <div className="row align-items-center">
             <div className="col-lg-8">
-              <span className="badge bg-white text-primary mb-2 px-3 py-1 fw-bold">ONLINE CERTIFICATIONS</span>
+              <div className="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                <span className="badge bg-white text-primary px-3 py-1 fw-bold">ONLINE CERTIFICATIONS</span>
+                {user?.instituteName && (
+                  <span className="badge bg-white bg-opacity-25 text-white px-3 py-1 fw-semibold">
+                    <i className="bi bi-building me-1"></i> {user.instituteName}
+                  </span>
+                )}
+              </div>
               <h2 className="fw-bold mb-2">Technical Skill Assessments</h2>
               <p className="lead mb-0 text-white-50" style={{ fontSize: '1rem' }}>
-                Validate your Java, Spring Boot, and problem solving skills with timed assessments, automated MCQ evaluation and coding workspaces.
+                Assigned examinations curated by your institute. Validate competencies with timed tests and automated evaluations.
               </p>
             </div>
             <div className="col-lg-4 text-lg-end mt-3 mt-lg-0">
               <div className="p-3 bg-white bg-opacity-10 rounded-3 d-inline-block text-start">
-                <div className="small text-white-50">Active Assessments</div>
+                <div className="small text-white-50">Assigned Assessments</div>
                 <div className="fs-3 fw-bold">{totalElements} Available</div>
               </div>
             </div>
@@ -98,7 +110,7 @@ const StudentDashboard = () => {
         <div className="col-lg-7">
           <div className="d-flex flex-wrap gap-2">
             <button
-              className={`btn btn-sm rounded-pill px-3 ${!selectedCategory ? 'btn-primary' : 'btn-light border'}`}
+              className={`btn btn-sm rounded-pill px-3 ${selectedCategory === '' ? 'btn-primary' : 'btn-outline-secondary'}`}
               onClick={() => {
                 setSelectedCategory('');
                 setPage(0);
@@ -109,9 +121,9 @@ const StudentDashboard = () => {
             {categories.map((cat) => (
               <button
                 key={cat.id}
-                className={`btn btn-sm rounded-pill px-3 ${selectedCategory === String(cat.id) ? 'btn-primary' : 'btn-light border'}`}
+                className={`btn btn-sm rounded-pill px-3 ${selectedCategory === cat.id ? 'btn-primary' : 'btn-outline-secondary'}`}
                 onClick={() => {
-                  setSelectedCategory(String(cat.id));
+                  setSelectedCategory(cat.id);
                   setPage(0);
                 }}
               >
@@ -126,7 +138,7 @@ const StudentDashboard = () => {
             <input
               type="text"
               className="form-control"
-              placeholder="Search assessment by title..."
+              placeholder="Search by assessment title..."
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
             />
@@ -160,7 +172,16 @@ const StudentDashboard = () => {
                     </span>
                   </div>
 
-                  <h5 className="fw-bold text-dark mb-2">{exam.title}</h5>
+                  <h5 className="fw-bold text-dark mb-1">{exam.title}</h5>
+
+                  {exam.instituteName && (
+                    <div className="mb-2">
+                      <span className="badge bg-secondary-subtle text-secondary small">
+                        <i className="bi bi-building me-1"></i> {exam.instituteName}
+                      </span>
+                    </div>
+                  )}
+
                   <p className="text-muted small flex-grow-1" style={{ minHeight: '40px' }}>
                     {exam.description || 'Comprehensive evaluation covering key competencies and problem solving.'}
                   </p>
@@ -200,8 +221,10 @@ const StudentDashboard = () => {
         <div className="card border-0 shadow-sm text-center py-5">
           <div className="card-body">
             <i className="bi bi-journal-x fs-1 text-muted mb-2 d-inline-block"></i>
-            <h5>No published assessments available</h5>
-            <p className="text-muted">Check back later or adjust your category filter.</p>
+            <h5>No published assessments assigned to you</h5>
+            <p className="text-muted">
+              Your institute administrator has not assigned any active examinations to your candidate account yet.
+            </p>
           </div>
         </div>
       )}

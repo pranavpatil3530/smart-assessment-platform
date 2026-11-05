@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
-  const { user, isAuthenticated, isAdmin, isStudent, logout } = useAuth();
+  const { user, isAuthenticated, isSuperAdmin, isInstituteAdmin, isAdmin, isStudent, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -19,10 +19,18 @@ const Navbar = () => {
     return null;
   }
 
+  const getBrandDestination = () => {
+    if (!isAuthenticated) return '/login';
+    if (isSuperAdmin) return '/super-admin/dashboard';
+    if (isInstituteAdmin) return '/admin/exams';
+    if (isAdmin) return '/admin/dashboard';
+    return '/dashboard';
+  };
+
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm py-2">
       <div className="container">
-        <Link className="navbar-brand d-flex align-items-center gap-2" to={isAdmin ? '/admin/dashboard' : '/dashboard'}>
+        <Link className="navbar-brand d-flex align-items-center gap-2" to={getBrandDestination()}>
           <span className="navbar-brand-badge">
             <i className="bi bi-mortarboard-fill me-1"></i> SmartAssessment
           </span>
@@ -42,6 +50,7 @@ const Navbar = () => {
 
         <div className="collapse navbar-collapse" id="navbarContent">
           <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+            {/* Student Navigation */}
             {isAuthenticated && isStudent && (
               <>
                 <li className="nav-item">
@@ -51,13 +60,51 @@ const Navbar = () => {
                 </li>
                 <li className="nav-item">
                   <Link className={`nav-link ${isActive('/student/history') ? 'active fw-semibold' : ''}`} to="/student/history">
-                    <i className="bi bi-clock-history me-1"></i> Exam History
+                    <i className="bi bi-clock-history me-1"></i> My Attempts
                   </Link>
                 </li>
               </>
             )}
 
-            {isAuthenticated && isAdmin && (
+            {/* Super Admin Navigation */}
+            {isAuthenticated && isSuperAdmin && (
+              <>
+                <li className="nav-item">
+                  <Link className={`nav-link ${isActive('/super-admin/dashboard') ? 'active fw-semibold' : ''}`} to="/super-admin/dashboard">
+                    <i className="bi bi-shield-check me-1"></i> Institute Approvals & Stats
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link className={`nav-link ${isActive('/admin/exams') ? 'active fw-semibold' : ''}`} to="/admin/exams">
+                    <i className="bi bi-journal-check me-1"></i> All Platform Exams
+                  </Link>
+                </li>
+              </>
+            )}
+
+            {/* Institute Admin Navigation */}
+            {isAuthenticated && isInstituteAdmin && (
+              <>
+                <li className="nav-item">
+                  <Link className={`nav-link ${isActive('/admin/exams') ? 'active fw-semibold' : ''}`} to="/admin/exams">
+                    <i className="bi bi-journal-check me-1"></i> Manage Exams
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link className={`nav-link ${isActive('/institute/candidates') ? 'active fw-semibold' : ''}`} to="/institute/candidates">
+                    <i className="bi bi-people-fill me-1"></i> Candidate Roster
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link className={`nav-link ${isActive('/admin/dashboard') ? 'active fw-semibold' : ''}`} to="/admin/dashboard">
+                    <i className="bi bi-speedometer2 me-1"></i> Analytics
+                  </Link>
+                </li>
+              </>
+            )}
+
+            {/* Legacy Admin Navigation */}
+            {isAuthenticated && !isSuperAdmin && !isInstituteAdmin && isAdmin && (
               <>
                 <li className="nav-item">
                   <Link className={`nav-link ${isActive('/admin/dashboard') ? 'active fw-semibold' : ''}`} to="/admin/dashboard">
@@ -84,25 +131,61 @@ const Navbar = () => {
                   aria-expanded="false"
                 >
                   <div
-                    className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold"
+                    className={`rounded-circle text-white d-flex align-items-center justify-content-center fw-bold ${
+                      isSuperAdmin ? 'bg-danger' : isInstituteAdmin ? 'bg-warning text-dark' : 'bg-primary'
+                    }`}
                     style={{ width: '32px', height: '32px', fontSize: '0.85rem' }}
                   >
                     {user?.fullName?.charAt(0).toUpperCase() || 'U'}
                   </div>
                   <span>{user?.fullName}</span>
-                  <span className={`badge ${isAdmin ? 'bg-danger' : 'bg-primary'} ms-1`} style={{ fontSize: '0.7rem' }}>
-                    {isAdmin ? 'ADMIN' : 'STUDENT'}
-                  </span>
+
+                  {isSuperAdmin && (
+                    <span className="badge bg-danger ms-1" style={{ fontSize: '0.7rem' }}>
+                      MAIN ADMIN
+                    </span>
+                  )}
+
+                  {isInstituteAdmin && (
+                    <>
+                      <span className="badge bg-warning text-dark ms-1" style={{ fontSize: '0.7rem' }}>
+                        INSTITUTE ADMIN
+                      </span>
+                      {user?.instituteName && (
+                        <span className="badge bg-secondary ms-1 text-truncate" style={{ fontSize: '0.7rem', maxWidth: '120px' }}>
+                          {user.instituteName}
+                        </span>
+                      )}
+                    </>
+                  )}
+
+                  {isStudent && (
+                    <>
+                      <span className="badge bg-primary ms-1" style={{ fontSize: '0.7rem' }}>
+                        CANDIDATE
+                      </span>
+                      {user?.instituteName && (
+                        <span className="badge bg-secondary ms-1 text-truncate" style={{ fontSize: '0.7rem', maxWidth: '120px' }}>
+                          {user.instituteName}
+                        </span>
+                      )}
+                    </>
+                  )}
                 </a>
                 <ul className="dropdown-menu dropdown-menu-end shadow-sm">
                   <li>
                     <div className="dropdown-item-text text-muted small">
                       Signed in as <strong>{user?.username}</strong>
+                      {user?.instituteName && (
+                        <div className="text-primary mt-1">
+                          <i className="bi bi-building me-1"></i> {user.instituteName}
+                        </div>
+                      )}
                     </div>
                   </li>
                   <li><hr className="dropdown-divider" /></li>
                   <li>
-                    <button className="dropdown-item text-danger" onClick={handleLogout}>
+                    <button className="btn dropdown-item text-danger" onClick={handleLogout}>
                       <i className="bi bi-box-arrow-right me-2"></i> Logout
                     </button>
                   </li>

@@ -11,11 +11,19 @@ public class UserResponseDto {
     private Role role;
     private boolean enabled;
     private LocalDateTime createdAt;
+    private Long instituteId;
+    private String instituteName;
+    private String approvalStatus;
 
     public UserResponseDto() {
     }
 
     public UserResponseDto(Long id, String username, String email, String fullName, Role role, boolean enabled, LocalDateTime createdAt) {
+        this(id, username, email, fullName, role, enabled, createdAt, null, null, "APPROVED");
+    }
+
+    public UserResponseDto(Long id, String username, String email, String fullName, Role role, boolean enabled,
+                           LocalDateTime createdAt, Long instituteId, String instituteName, String approvalStatus) {
         this.id = id;
         this.username = username;
         this.email = email;
@@ -23,6 +31,9 @@ public class UserResponseDto {
         this.role = role;
         this.enabled = enabled;
         this.createdAt = createdAt;
+        this.instituteId = instituteId;
+        this.instituteName = instituteName;
+        this.approvalStatus = approvalStatus;
     }
 
     public Long getId() {
@@ -81,6 +92,30 @@ public class UserResponseDto {
         this.createdAt = createdAt;
     }
 
+    public Long getInstituteId() {
+        return instituteId;
+    }
+
+    public void setInstituteId(Long instituteId) {
+        this.instituteId = instituteId;
+    }
+
+    public String getInstituteName() {
+        return instituteName;
+    }
+
+    public void setInstituteName(String instituteName) {
+        this.instituteName = instituteName;
+    }
+
+    public String getApprovalStatus() {
+        return approvalStatus;
+    }
+
+    public void setApprovalStatus(String approvalStatus) {
+        this.approvalStatus = approvalStatus;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -93,6 +128,9 @@ public class UserResponseDto {
         private Role role;
         private boolean enabled;
         private LocalDateTime createdAt;
+        private Long instituteId;
+        private String instituteName;
+        private String approvalStatus = "APPROVED";
 
         public Builder id(Long id) {
             this.id = id;
@@ -129,8 +167,24 @@ public class UserResponseDto {
             return this;
         }
 
+        public Builder instituteId(Long instituteId) {
+            this.instituteId = instituteId;
+            return this;
+        }
+
+        public Builder instituteName(String instituteName) {
+            this.instituteName = instituteName;
+            return this;
+        }
+
+        public Builder approvalStatus(String approvalStatus) {
+            this.approvalStatus = approvalStatus;
+            return this;
+        }
+
         public UserResponseDto build() {
-            return new UserResponseDto(id, username, email, fullName, role, enabled, createdAt);
+            return new UserResponseDto(id, username, email, fullName, role, enabled, createdAt,
+                    instituteId, instituteName, approvalStatus);
         }
     }
 }

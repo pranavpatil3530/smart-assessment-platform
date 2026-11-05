@@ -34,14 +34,19 @@ public class UserPrincipal implements UserDetails {
     }
 
     public static UserPrincipal create(User user) {
-        SimpleGrantedAuthority authority = new SimpleGrantedAuthority(user.getRole().name());
+        java.util.List<GrantedAuthority> authorities = new java.util.ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority(user.getRole().name()));
+        if (user.getRole() == com.smartassessment.entity.Role.ROLE_SUPER_ADMIN ||
+            user.getRole() == com.smartassessment.entity.Role.ROLE_INSTITUTE_ADMIN) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        }
         return new UserPrincipal(
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
                 user.getFullName(),
                 user.getPassword(),
-                Collections.singletonList(authority),
+                authorities,
                 user.isEnabled()
         );
     }

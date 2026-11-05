@@ -32,10 +32,23 @@ public class User extends BaseEntity {
     @Column(nullable = false)
     private boolean enabled = true;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "institute_id")
+    private Institute institute;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "approval_status", nullable = false, length = 30)
+    private ApprovalStatus approvalStatus = ApprovalStatus.APPROVED;
+
     public User() {
     }
 
     public User(Long id, String username, String email, String password, String fullName, Role role, boolean enabled) {
+        this(id, username, email, password, fullName, role, enabled, null, ApprovalStatus.APPROVED);
+    }
+
+    public User(Long id, String username, String email, String password, String fullName, Role role, boolean enabled,
+                Institute institute, ApprovalStatus approvalStatus) {
         this.id = id;
         this.username = username;
         this.email = email;
@@ -43,6 +56,8 @@ public class User extends BaseEntity {
         this.fullName = fullName;
         this.role = role;
         this.enabled = enabled;
+        this.institute = institute;
+        this.approvalStatus = approvalStatus != null ? approvalStatus : ApprovalStatus.APPROVED;
     }
 
     public Long getId() {
@@ -101,6 +116,22 @@ public class User extends BaseEntity {
         this.enabled = enabled;
     }
 
+    public Institute getInstitute() {
+        return institute;
+    }
+
+    public void setInstitute(Institute institute) {
+        this.institute = institute;
+    }
+
+    public ApprovalStatus getApprovalStatus() {
+        return approvalStatus;
+    }
+
+    public void setApprovalStatus(ApprovalStatus approvalStatus) {
+        this.approvalStatus = approvalStatus;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -113,6 +144,8 @@ public class User extends BaseEntity {
         private String fullName;
         private Role role;
         private boolean enabled = true;
+        private Institute institute;
+        private ApprovalStatus approvalStatus = ApprovalStatus.APPROVED;
 
         public Builder id(Long id) {
             this.id = id;
@@ -149,8 +182,18 @@ public class User extends BaseEntity {
             return this;
         }
 
+        public Builder institute(Institute institute) {
+            this.institute = institute;
+            return this;
+        }
+
+        public Builder approvalStatus(ApprovalStatus approvalStatus) {
+            this.approvalStatus = approvalStatus;
+            return this;
+        }
+
         public User build() {
-            return new User(id, username, email, password, fullName, role, enabled);
+            return new User(id, username, email, password, fullName, role, enabled, institute, approvalStatus);
         }
     }
 }

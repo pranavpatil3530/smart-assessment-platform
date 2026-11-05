@@ -3,7 +3,9 @@ package com.smartassessment.entity;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "exams")
@@ -46,6 +48,21 @@ public class Exam extends BaseEntity {
 
     @Column(name = "randomize_options", nullable = false)
     private boolean randomizeOptions = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "institute_id")
+    private Institute institute;
+
+    @Column(name = "assign_all_students", nullable = false)
+    private boolean assignAllStudents = true;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "exam_assigned_candidates",
+            joinColumns = @JoinColumn(name = "exam_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private Set<User> assignedCandidates = new HashSet<>();
 
     @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Question> questions = new ArrayList<>();
@@ -198,6 +215,30 @@ public class Exam extends BaseEntity {
         this.attempts = attempts;
     }
 
+    public Institute getInstitute() {
+        return institute;
+    }
+
+    public void setInstitute(Institute institute) {
+        this.institute = institute;
+    }
+
+    public boolean isAssignAllStudents() {
+        return assignAllStudents;
+    }
+
+    public void setAssignAllStudents(boolean assignAllStudents) {
+        this.assignAllStudents = assignAllStudents;
+    }
+
+    public Set<User> getAssignedCandidates() {
+        return assignedCandidates;
+    }
+
+    public void setAssignedCandidates(Set<User> assignedCandidates) {
+        this.assignedCandidates = assignedCandidates;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -215,6 +256,9 @@ public class Exam extends BaseEntity {
         private boolean published = false;
         private boolean randomizeQuestions = true;
         private boolean randomizeOptions = true;
+        private Institute institute;
+        private boolean assignAllStudents = true;
+        private Set<User> assignedCandidates = new HashSet<>();
         private List<Question> questions = new ArrayList<>();
         private List<ExamAttempt> attempts = new ArrayList<>();
 
@@ -278,6 +322,21 @@ public class Exam extends BaseEntity {
             return this;
         }
 
+        public Builder institute(Institute institute) {
+            this.institute = institute;
+            return this;
+        }
+
+        public Builder assignAllStudents(boolean assignAllStudents) {
+            this.assignAllStudents = assignAllStudents;
+            return this;
+        }
+
+        public Builder assignedCandidates(Set<User> assignedCandidates) {
+            this.assignedCandidates = assignedCandidates;
+            return this;
+        }
+
         public Builder questions(List<Question> questions) {
             this.questions = questions;
             return this;
@@ -289,9 +348,15 @@ public class Exam extends BaseEntity {
         }
 
         public Exam build() {
-            return new Exam(id, title, description, category, durationMinutes, totalMarks,
+            Exam exam = new Exam(id, title, description, category, durationMinutes, totalMarks,
                     passingMarks, negativeMarkingRate, maxAttempts, published,
                     randomizeQuestions, randomizeOptions, questions, attempts);
+            exam.setInstitute(institute);
+            exam.setAssignAllStudents(assignAllStudents);
+            if (assignedCandidates != null) {
+                exam.setAssignedCandidates(assignedCandidates);
+            }
+            return exam;
         }
     }
 }

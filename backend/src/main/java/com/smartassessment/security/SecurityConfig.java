@@ -79,6 +79,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/exams/published/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
+                        .requestMatchers("/api/super-admin/**").hasAuthority("ROLE_SUPER_ADMIN")
+                        .requestMatchers("/api/institute/**").hasAnyAuthority("ROLE_INSTITUTE_ADMIN", "ROLE_ADMIN", "ROLE_SUPER_ADMIN")
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/student/**").hasAnyAuthority("ROLE_STUDENT", "ROLE_ADMIN")
                         .anyRequest().authenticated()

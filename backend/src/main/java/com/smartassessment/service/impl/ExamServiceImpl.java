@@ -7,13 +7,14 @@ import com.smartassessment.dto.exam.ExamResponseDto;
 import com.smartassessment.dto.question.CodingProblemDto;
 import com.smartassessment.dto.question.OptionResponseDto;
 import com.smartassessment.dto.question.QuestionResponseDto;
-import com.smartassessment.entity.Category;
-import com.smartassessment.entity.Exam;
-import com.smartassessment.entity.Question;
+import com.smartassessment.entity.*;
 import com.smartassessment.exception.BadRequestException;
 import com.smartassessment.exception.ResourceNotFoundException;
 import com.smartassessment.repository.CategoryRepository;
 import com.smartassessment.repository.ExamRepository;
+import com.smartassessment.repository.InstituteRepository;
+import com.smartassessment.repository.UserRepository;
+import com.smartassessment.security.UserPrincipal;
 import com.smartassessment.service.ExamService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,12 +34,29 @@ import java.util.stream.Collectors;
 public class ExamServiceImpl implements ExamService {
 
     private static final Logger log = LoggerFactory.getLogger(ExamServiceImpl.class);
+
     private final ExamRepository examRepository;
     private final CategoryRepository categoryRepository;
+    private final UserRepository userRepository;
+    private final InstituteRepository instituteRepository;
 
-    public ExamServiceImpl(ExamRepository examRepository, CategoryRepository categoryRepository) {
+    public ExamServiceImpl(ExamRepository examRepository,
+                           CategoryRepository categoryRepository,
+                           UserRepository userRepository,
+                           InstituteRepository instituteRepository) {
         this.examRepository = examRepository;
         this.categoryRepository = categoryRepository;
+        this.userRepository = userRepository;
+        this.instituteRepository = instituteRepository;
+    }
+
+    private User getCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof UserPrincipal) {
+            UserPrincipal principal = (UserPrincipal) auth.getPrincipal();
+            return userRepository.findById(principal.getId()).orElse(null);
+        }
+        return null;
     }
 
     @Override
@@ -47,6 +67,15 @@ public class ExamServiceImpl implements ExamService {
 
         if (requestDto.getPassingMarks() > requestDto.getTotalMarks()) {
             throw new BadRequestException("Passing marks cannot exceed total marks");
+        }
+
+        User currentUser = getCurrentUser();
+        Institute institute = null;
+        if (currentUser != null && currentUser.getRole() == Role.ROLE_INSTITUTE_ADMIN) {
+            institute = currentUser.getInstitute();
+            if (institute == null) {
+                institute = instituteRepository.findByAdminUser(currentUser).orElse(null);
+            }
         }
 
         Exam exam = Exam.builder()
@@ -61,10 +90,13 @@ public class ExamServiceImpl implements ExamService {
                 .published(requestDto.getPublished() != null ? requestDto.getPublished() : false)
                 .randomizeQuestions(requestDto.getRandomizeQuestions() != null ? requestDto.getRandomizeQuestions() : true)
                 .randomizeOptions(requestDto.getRandomizeOptions() != null ? requestDto.getRandomizeOptions() : true)
+                .institute(institute)
+                .assignAllStudents(true)
                 .build();
 
         Exam savedExam = examRepository.save(exam);
-        log.info("Created new exam: '{}' (ID: {})", savedExam.getTitle(), savedExam.getId());
+        log.info("Created new exam: '{}' (ID: {}) for institute: {}",
+                savedExam.getTitle(), savedExam.getId(), institute != null ? institute.getName() : "Global");
 
         return mapToResponseDto(savedExam);
     }
@@ -131,6 +163,10 @@ public class ExamServiceImpl implements ExamService {
                 .map(this::mapQuestionToResponseDto)
                 .collect(Collectors.toList());
 
+        Long instituteId = exam.getInstitute() != null ? exam.getInstitute().getId() : null;
+        String instituteName = exam.getInstitute() != null ? exam.getInstitute().getName() : null;
+        int assignedCount = exam.getAssignedCandidates() != null ? exam.getAssignedCandidates().size() : 0;
+
         return ExamDetailResponseDto.builder()
                 .id(exam.getId())
                 .title(exam.getTitle())
@@ -148,6 +184,10 @@ public class ExamServiceImpl implements ExamService {
                 .totalQuestions(exam.getQuestions().size())
                 .createdAt(exam.getCreatedAt())
                 .questions(questionDtos)
+                .instituteId(instituteId)
+                .instituteName(instituteName)
+                .assignAllStudents(exam.isAssignAllStudents())
+                .assignedCandidatesCount(assignedCount)
                 .build();
     }
 
@@ -175,7 +215,23 @@ public class ExamServiceImpl implements ExamService {
                 Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        Page<Exam> examPage = examRepository.searchAllExams(categoryId, (keyword != null && !keyword.isBlank()) ? keyword.trim() : null, pageable);
+        User currentUser = getCurrentUser();
+        Institute institute = null;
+        if (currentUser != null && currentUser.getRole() == Role.ROLE_INSTITUTE_ADMIN) {
+            institute = currentUser.getInstitute();
+            if (institute == null) {
+                institute = instituteRepository.findByAdminUser(currentUser).orElse(null);
+            }
+        }
+
+        Page<Exam> examPage;
+        String trimmedKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+
+        if (institute != null) {
+            examPage = examRepository.searchExamsForAdmin(institute, categoryId, trimmedKeyword, pageable);
+        } else {
+            examPage = examRepository.searchAllExams(categoryId, trimmedKeyword, pageable);
+        }
 
         List<ExamResponseDto> content = examPage.getContent().stream()
                 .map(this::mapToResponseDto)
@@ -198,7 +254,16 @@ public class ExamServiceImpl implements ExamService {
                 Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        Page<Exam> examPage = examRepository.searchPublishedExams(categoryId, (keyword != null && !keyword.isBlank()) ? keyword.trim() : null, pageable);
+        User currentUser = getCurrentUser();
+        String trimmedKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+
+        Page<Exam> examPage;
+        if (currentUser != null && currentUser.getRole() == Role.ROLE_STUDENT) {
+            Institute institute = currentUser.getInstitute();
+            examPage = examRepository.searchAvailableExamsForStudent(institute, currentUser, categoryId, trimmedKeyword, pageable);
+        } else {
+            examPage = examRepository.searchPublishedExams(categoryId, trimmedKeyword, pageable);
+        }
 
         List<ExamResponseDto> content = examPage.getContent().stream()
                 .map(this::mapToResponseDto)
@@ -215,6 +280,10 @@ public class ExamServiceImpl implements ExamService {
     }
 
     private ExamResponseDto mapToResponseDto(Exam exam) {
+        Long instituteId = exam.getInstitute() != null ? exam.getInstitute().getId() : null;
+        String instituteName = exam.getInstitute() != null ? exam.getInstitute().getName() : null;
+        int assignedCount = exam.getAssignedCandidates() != null ? exam.getAssignedCandidates().size() : 0;
+
         return ExamResponseDto.builder()
                 .id(exam.getId())
                 .title(exam.getTitle())
@@ -231,6 +300,10 @@ public class ExamServiceImpl implements ExamService {
                 .randomizeOptions(exam.isRandomizeOptions())
                 .totalQuestions(exam.getQuestions() != null ? exam.getQuestions().size() : 0)
                 .createdAt(exam.getCreatedAt())
+                .instituteId(instituteId)
+                .instituteName(instituteName)
+                .assignAllStudents(exam.isAssignAllStudents())
+                .assignedCandidatesCount(assignedCount)
                 .build();
     }
 

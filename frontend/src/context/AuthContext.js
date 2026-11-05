@@ -39,7 +39,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isAuthenticated = !!token && !!user;
-  const isAdmin = user?.role === 'ROLE_ADMIN';
+  const isSuperAdmin = user?.role === 'ROLE_SUPER_ADMIN';
+  const isInstituteAdmin = user?.role === 'ROLE_INSTITUTE_ADMIN';
+  const isAdmin = user?.role === 'ROLE_ADMIN' || isSuperAdmin || isInstituteAdmin;
   const isStudent = user?.role === 'ROLE_STUDENT';
 
   return (
@@ -51,8 +53,13 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         isAuthenticated,
+        isSuperAdmin,
+        isInstituteAdmin,
         isAdmin,
         isStudent,
+        instituteName: user?.instituteName,
+        instituteId: user?.instituteId,
+        approvalStatus: user?.approvalStatus,
       }}
     >
       {children}

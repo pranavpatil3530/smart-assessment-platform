@@ -9,11 +9,19 @@ public class JwtAuthResponse {
     private String email;
     private String fullName;
     private String role;
+    private Long instituteId;
+    private String instituteName;
+    private String approvalStatus;
 
     public JwtAuthResponse() {
     }
 
     public JwtAuthResponse(String accessToken, String tokenType, Long userId, String username, String email, String fullName, String role) {
+        this(accessToken, tokenType, userId, username, email, fullName, role, null, null, "APPROVED");
+    }
+
+    public JwtAuthResponse(String accessToken, String tokenType, Long userId, String username, String email,
+                           String fullName, String role, Long instituteId, String instituteName, String approvalStatus) {
         this.accessToken = accessToken;
         this.tokenType = tokenType != null ? tokenType : "Bearer";
         this.userId = userId;
@@ -21,6 +29,9 @@ public class JwtAuthResponse {
         this.email = email;
         this.fullName = fullName;
         this.role = role;
+        this.instituteId = instituteId;
+        this.instituteName = instituteName;
+        this.approvalStatus = approvalStatus;
     }
 
     public String getAccessToken() {
@@ -79,6 +90,30 @@ public class JwtAuthResponse {
         this.role = role;
     }
 
+    public Long getInstituteId() {
+        return instituteId;
+    }
+
+    public void setInstituteId(Long instituteId) {
+        this.instituteId = instituteId;
+    }
+
+    public String getInstituteName() {
+        return instituteName;
+    }
+
+    public void setInstituteName(String instituteName) {
+        this.instituteName = instituteName;
+    }
+
+    public String getApprovalStatus() {
+        return approvalStatus;
+    }
+
+    public void setApprovalStatus(String approvalStatus) {
+        this.approvalStatus = approvalStatus;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -91,6 +126,9 @@ public class JwtAuthResponse {
         private String email;
         private String fullName;
         private String role;
+        private Long instituteId;
+        private String instituteName;
+        private String approvalStatus = "APPROVED";
 
         public Builder accessToken(String accessToken) {
             this.accessToken = accessToken;
@@ -127,8 +165,24 @@ public class JwtAuthResponse {
             return this;
         }
 
+        public Builder instituteId(Long instituteId) {
+            this.instituteId = instituteId;
+            return this;
+        }
+
+        public Builder instituteName(String instituteName) {
+            this.instituteName = instituteName;
+            return this;
+        }
+
+        public Builder approvalStatus(String approvalStatus) {
+            this.approvalStatus = approvalStatus;
+            return this;
+        }
+
         public JwtAuthResponse build() {
-            return new JwtAuthResponse(accessToken, tokenType, userId, username, email, fullName, role);
+            return new JwtAuthResponse(accessToken, tokenType, userId, username, email, fullName, role,
+                    instituteId, instituteName, approvalStatus);
         }
     }
 }

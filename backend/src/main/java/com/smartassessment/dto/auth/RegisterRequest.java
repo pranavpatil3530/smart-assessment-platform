@@ -24,15 +24,29 @@ public class RegisterRequest {
 
     private Role role;
 
+    private String instituteName;
+
+    private String instituteCode;
+
+    private String contactPhone;
+
     public RegisterRequest() {
     }
 
     public RegisterRequest(String username, String email, String password, String fullName, Role role) {
+        this(username, email, password, fullName, role, null, null, null);
+    }
+
+    public RegisterRequest(String username, String email, String password, String fullName, Role role,
+                           String instituteName, String instituteCode, String contactPhone) {
         this.username = username;
         this.email = email;
         this.password = password;
         this.fullName = fullName;
         this.role = role;
+        this.instituteName = instituteName;
+        this.instituteCode = instituteCode;
+        this.contactPhone = contactPhone;
     }
 
     public String getUsername() {
@@ -75,6 +89,30 @@ public class RegisterRequest {
         this.role = role;
     }
 
+    public String getInstituteName() {
+        return instituteName;
+    }
+
+    public void setInstituteName(String instituteName) {
+        this.instituteName = instituteName;
+    }
+
+    public String getInstituteCode() {
+        return instituteCode;
+    }
+
+    public void setInstituteCode(String instituteCode) {
+        this.instituteCode = instituteCode;
+    }
+
+    public String getContactPhone() {
+        return contactPhone;
+    }
+
+    public void setContactPhone(String contactPhone) {
+        this.contactPhone = contactPhone;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -85,6 +123,9 @@ public class RegisterRequest {
         private String password;
         private String fullName;
         private Role role;
+        private String instituteName;
+        private String instituteCode;
+        private String contactPhone;
 
         public Builder username(String username) {
             this.username = username;
@@ -111,8 +152,24 @@ public class RegisterRequest {
             return this;
         }
 
+        public Builder instituteName(String instituteName) {
+            this.instituteName = instituteName;
+            return this;
+        }
+
+        public Builder instituteCode(String instituteCode) {
+            this.instituteCode = instituteCode;
+            return this;
+        }
+
+        public Builder contactPhone(String contactPhone) {
+            this.contactPhone = contactPhone;
+            return this;
+        }
+
         public RegisterRequest build() {
-            return new RegisterRequest(username, email, password, fullName, role);
+            return new RegisterRequest(username, email, password, fullName, role,
+                    instituteName, instituteCode, contactPhone);
         }
     }
 }
