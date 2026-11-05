@@ -97,7 +97,7 @@ public class AuthServiceImpl implements AuthService {
                 .role(user.getRole().name())
                 .instituteId(instituteId)
                 .instituteName(instituteName)
-                .approvalStatus(user.getApprovalStatus())
+                .approvalStatus(user.getApprovalStatus() != null ? user.getApprovalStatus().name() : null)
                 .build();
     }
 
@@ -222,7 +222,7 @@ public class AuthServiceImpl implements AuthService {
                 .createdAt(user.getCreatedAt())
                 .instituteId(user.getInstitute() != null ? user.getInstitute().getId() : null)
                 .instituteName(user.getInstitute() != null ? user.getInstitute().getName() : null)
-                .approvalStatus(user.getApprovalStatus())
+                .approvalStatus(user.getApprovalStatus() != null ? user.getApprovalStatus().name() : null)
                 .build();
     }
 }

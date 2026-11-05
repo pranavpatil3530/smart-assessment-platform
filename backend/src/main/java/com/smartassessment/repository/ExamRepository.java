@@ -30,8 +30,8 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
                                    Pageable pageable);
 
     @Query("SELECT e FROM Exam e WHERE e.published = true AND " +
-           "(:institute IS NULL OR e.institute IS NULL OR e.institute = :institute) AND " +
-           "(e.assignAllStudents = true OR :student MEMBER OF e.assignedCandidates) AND " +
+           "(e.institute IS NULL OR e.institute = :institute) AND " +
+           "(e.assignAllStudents = true OR e.assignAllStudents IS NULL OR :student MEMBER OF e.assignedCandidates) AND " +
            "(:categoryId IS NULL OR e.category.id = :categoryId) AND " +
            "(:keyword IS NULL OR LOWER(e.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "LOWER(e.description) LIKE LOWER(CONCAT('%', :keyword, '%')))")

@@ -244,11 +244,22 @@ public class DataInitializer implements CommandLineRunner {
 
             examRepository.save(javaExam);
         } else {
-            // Associate existing exams with MIT if not associated
+            // Associate existing exams with MIT if not associated and ensure assignAllStudents = true
             examRepository.findAll().forEach(e -> {
-                if (e.getInstitute() == null) {
+                boolean changed = false;
+                if (e.getInstitute() == null && mitInstitute != null) {
                     e.setInstitute(mitInstitute);
+                    changed = true;
+                }
+                if (!e.isAssignAllStudents()) {
                     e.setAssignAllStudents(true);
+                    changed = true;
+                }
+                if (!e.isPublished()) {
+                    e.setPublished(true);
+                    changed = true;
+                }
+                if (changed) {
                     examRepository.save(e);
                 }
             });

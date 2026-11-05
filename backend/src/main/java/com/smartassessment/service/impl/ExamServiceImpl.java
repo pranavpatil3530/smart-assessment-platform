@@ -260,7 +260,11 @@ public class ExamServiceImpl implements ExamService {
         Page<Exam> examPage;
         if (currentUser != null && currentUser.getRole() == Role.ROLE_STUDENT) {
             Institute institute = currentUser.getInstitute();
-            examPage = examRepository.searchAvailableExamsForStudent(institute, currentUser, categoryId, trimmedKeyword, pageable);
+            if (institute != null) {
+                examPage = examRepository.searchAvailableExamsForStudent(institute, currentUser, categoryId, trimmedKeyword, pageable);
+            } else {
+                examPage = examRepository.searchPublishedExams(categoryId, trimmedKeyword, pageable);
+            }
         } else {
             examPage = examRepository.searchPublishedExams(categoryId, trimmedKeyword, pageable);
         }
