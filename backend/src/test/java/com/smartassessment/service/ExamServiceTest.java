@@ -8,6 +8,8 @@ import com.smartassessment.exception.BadRequestException;
 import com.smartassessment.exception.ResourceNotFoundException;
 import com.smartassessment.repository.CategoryRepository;
 import com.smartassessment.repository.ExamRepository;
+import com.smartassessment.repository.InstituteRepository;
+import com.smartassessment.repository.UserRepository;
 import com.smartassessment.service.impl.ExamServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -32,6 +34,12 @@ class ExamServiceTest {
 
     @Mock
     private CategoryRepository categoryRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private InstituteRepository instituteRepository;
 
     @InjectMocks
     private ExamServiceImpl examService;
@@ -79,6 +87,7 @@ class ExamServiceTest {
     void createExam_Success() {
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(testCategory));
         when(examRepository.save(any(Exam.class))).thenReturn(testExam);
+        when(userRepository.findById(any())).thenReturn(Optional.empty());
 
         ExamResponseDto response = examService.createExam(testRequestDto);
 

@@ -7,6 +7,7 @@ import com.smartassessment.dto.auth.UserResponseDto;
 import com.smartassessment.entity.Role;
 import com.smartassessment.entity.User;
 import com.smartassessment.exception.BadRequestException;
+import com.smartassessment.repository.InstituteRepository;
 import com.smartassessment.repository.UserRepository;
 import com.smartassessment.security.TokenProvider;
 import com.smartassessment.security.UserPrincipal;
@@ -23,6 +24,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,6 +39,9 @@ class AuthServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private InstituteRepository instituteRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -109,6 +115,7 @@ class AuthServiceTest {
         UserPrincipal principal = UserPrincipal.create(savedUser);
         Authentication auth = new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
 
+        when(userRepository.findById(1L)).thenReturn(Optional.of(savedUser));
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(auth);
         when(tokenProvider.generateToken(auth)).thenReturn("mocked.jwt.token");
