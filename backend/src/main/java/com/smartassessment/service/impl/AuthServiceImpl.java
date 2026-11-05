@@ -112,7 +112,14 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("Email address already in use!");
         }
 
-        Role assignedRole = registerRequest.getRole() != null ? registerRequest.getRole() : Role.ROLE_STUDENT;
+        Role assignedRole = Role.ROLE_STUDENT;
+        if (registerRequest.getRole() != null && !registerRequest.getRole().trim().isEmpty()) {
+            try {
+                assignedRole = Role.valueOf(registerRequest.getRole().trim());
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException("Invalid role specified: " + registerRequest.getRole());
+            }
+        }
 
         if (assignedRole == Role.ROLE_SUPER_ADMIN || assignedRole == Role.ROLE_ADMIN) {
             throw new BadRequestException("Registration for Super Admin or Admin role is not allowed.");

@@ -1,6 +1,5 @@
 package com.smartassessment.dto.auth;
 
-import com.smartassessment.entity.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -22,7 +21,7 @@ public class RegisterRequest {
     @NotBlank(message = "Full name is required")
     private String fullName;
 
-    private Role role;
+    private String role;
 
     private String instituteName;
 
@@ -33,11 +32,11 @@ public class RegisterRequest {
     public RegisterRequest() {
     }
 
-    public RegisterRequest(String username, String email, String password, String fullName, Role role) {
+    public RegisterRequest(String username, String email, String password, String fullName, String role) {
         this(username, email, password, fullName, role, null, null, null);
     }
 
-    public RegisterRequest(String username, String email, String password, String fullName, Role role,
+    public RegisterRequest(String username, String email, String password, String fullName, String role,
                            String instituteName, String instituteCode, String contactPhone) {
         this.username = username;
         this.email = email;
@@ -81,11 +80,11 @@ public class RegisterRequest {
         this.fullName = fullName;
     }
 
-    public Role getRole() {
+    public String getRole() {
         return role;
     }
 
-    public void setRole(Role role) {
+    public void setRole(String role) {
         this.role = role;
     }
 
@@ -122,7 +121,7 @@ public class RegisterRequest {
         private String email;
         private String password;
         private String fullName;
-        private Role role;
+        private String role;
         private String instituteName;
         private String instituteCode;
         private String contactPhone;
@@ -147,7 +146,7 @@ public class RegisterRequest {
             return this;
         }
 
-        public Builder role(Role role) {
+        public Builder role(String role) {
             this.role = role;
             return this;
         }

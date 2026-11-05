@@ -62,7 +62,7 @@ class AuthServiceTest {
                 .email("newuser@example.com")
                 .password("Password123")
                 .fullName("New User")
-                .role(Role.ROLE_STUDENT)
+                .role("ROLE_STUDENT")
                 .build();
 
         savedUser = User.builder()
