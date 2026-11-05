@@ -1,0 +1,170 @@
+:root {
+  --primary-color: #2563eb;
+  --primary-hover: #1d4ed8;
+  --secondary-color: #64748b;
+  --success-color: #10b981;
+  --danger-color: #ef4444;
+  --warning-color: #f59e0b;
+  --dark-bg: #0f172a;
+  --card-bg: #ffffff;
+  --border-color: #e2e8f0;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f8fafc;
+  color: #1e293b;
+  min-height: 100vh;
+}
+
+code, pre, .font-monospace {
+  font-family: 'JetBrains Mono', Consolas, Monaco, monospace !important;
+}
+
+.navbar-brand-badge {
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+  color: white;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.5px;
+}
+
+.kpi-card {
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+}
+
+.exam-card {
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  transition: all 0.25s ease;
+  overflow: hidden;
+}
+
+.exam-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.1);
+  border-color: #93c5fd;
+}
+
+/* Question Palette Buttons */
+.palette-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+}
+
+.palette-btn.active {
+  ring: 3px solid #2563eb;
+  border-color: #2563eb;
+  font-weight: 700;
+}
+
+.palette-btn.answered {
+  background-color: #10b981;
+  border-color: #059669;
+  color: #ffffff;
+}
+
+.palette-btn.reviewed {
+  background-color: #8b5cf6;
+  border-color: #7c3aed;
+  color: #ffffff;
+}
+
+.palette-btn.unanswered {
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+/* Exam Timer Animation */
+.timer-container {
+  border-radius: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.timer-warning {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border: 2px solid #f87171;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+/* Custom Radio Option for MCQ */
+.option-label {
+  display: flex;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 0.75rem;
+}
+
+.option-label:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.option-label.selected {
+  border-color: #2563eb;
+  background-color: #eff6ff;
+}
+
+.option-label input[type="radio"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-right: 1rem;
+}
+
+/* Code Editor Styling */
+.code-editor-box {
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #334155;
+  min-height: 280px;
+  width: 100%;
+  resize: vertical;
+}
+
+.code-editor-box:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}

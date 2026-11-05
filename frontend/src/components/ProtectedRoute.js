@@ -1,0 +1,35 @@
+import React from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const { user, isAuthenticated, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user?.role)) {
+    // If student tries to visit admin page, redirect to student dashboard
+    if (user?.role === 'ROLE_STUDENT') {
+      return <Navigate to="/dashboard" replace />;
+    }
+    // If admin, redirect to admin dashboard
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
+  return children;
+};
+
+export default ProtectedRoute;
