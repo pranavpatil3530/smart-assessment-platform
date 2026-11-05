@@ -140,6 +140,7 @@ public class AuthServiceImpl implements AuthService {
                     .contactPhone(registerRequest.getContactPhone() != null ? registerRequest.getContactPhone().trim() : null)
                     .status(ApprovalStatus.PENDING)
                     .build();
+            Institute savedInstitute = instituteRepository.save(institute);
 
             User user = User.builder()
                     .username(registerRequest.getUsername().trim())
@@ -149,12 +150,12 @@ public class AuthServiceImpl implements AuthService {
                     .role(Role.ROLE_INSTITUTE_ADMIN)
                     .enabled(false) // Disabled until approved by Main Admin
                     .approvalStatus(ApprovalStatus.PENDING)
-                    .institute(institute)
+                    .institute(savedInstitute)
                     .build();
 
-            institute.setAdminUser(user);
             User savedUser = userRepository.save(user);
-            instituteRepository.save(institute);
+            savedInstitute.setAdminUser(savedUser);
+            instituteRepository.save(savedInstitute);
 
             log.info("Registered new institute admin: {} for institute: {} (PENDING APPROVAL)",
                     savedUser.getUsername(), institute.getName());
