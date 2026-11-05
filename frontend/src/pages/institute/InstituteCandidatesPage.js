@@ -27,16 +27,21 @@ const InstituteCandidatesPage = () => {
         instituteApi.getProfile(),
       ]);
 
-      if (candRes.data?.data) {
-        setCandidates(candRes.data.data.content || []);
-        setTotalPages(candRes.data.data.totalPages || 0);
-        setTotalElements(candRes.data.data.totalElements || 0);
+      const candPayload = candRes?.data || candRes;
+      if (candPayload) {
+        setCandidates(candPayload.content || (Array.isArray(candPayload) ? candPayload : []));
+        setTotalPages(candPayload.totalPages || 0);
+        setTotalElements(candPayload.totalElements || 0);
       }
-      if (statsRes.data?.data) {
-        setStats(statsRes.data.data);
+
+      const statsPayload = statsRes?.data || statsRes;
+      if (statsPayload) {
+        setStats(statsPayload);
       }
-      if (profRes.data?.data) {
-        setProfile(profRes.data.data);
+
+      const profPayload = profRes?.data || profRes;
+      if (profPayload) {
+        setProfile(profPayload);
       }
     } catch (err) {
       console.error('Failed to load institute candidates', err);

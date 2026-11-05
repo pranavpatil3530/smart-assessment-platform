@@ -18,7 +18,7 @@ const ExamCandidateAssignModal = ({ exam, isOpen, onClose, onAssigned }) => {
       setError(null);
       try {
         const res = await instituteApi.getExamCandidates(exam.id);
-        const list = res.data?.data || [];
+        const list = res?.data || (Array.isArray(res) ? res : res?.data?.data || []);
         setCandidates(list);
         setAssignAll(exam.assignAllStudents);
 

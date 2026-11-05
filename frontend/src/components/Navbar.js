@@ -75,6 +75,11 @@ const Navbar = () => {
                   </Link>
                 </li>
                 <li className="nav-item">
+                  <Link className={`nav-link ${isActive('/admin/dashboard') ? 'active fw-semibold' : ''}`} to="/admin/dashboard">
+                    <i className="bi bi-speedometer2 me-1"></i> Admin Overview
+                  </Link>
+                </li>
+                <li className="nav-item">
                   <Link className={`nav-link ${isActive('/admin/exams') ? 'active fw-semibold' : ''}`} to="/admin/exams">
                     <i className="bi bi-journal-check me-1"></i> All Platform Exams
                   </Link>

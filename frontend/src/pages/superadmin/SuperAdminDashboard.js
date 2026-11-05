@@ -18,6 +18,7 @@ const SuperAdminDashboard = () => {
 
   const loadData = async () => {
     setLoading(true);
+    setError(null);
     try {
       const [statsRes, pendingRes, allRes] = await Promise.all([
         superAdminApi.getStats(),
@@ -25,15 +26,24 @@ const SuperAdminDashboard = () => {
         superAdminApi.getInstitutes(null, 0, 50),
       ]);
 
-      if (statsRes.data?.data) {
-        setStats(statsRes.data.data);
+      const statsPayload = statsRes?.data?.data || statsRes?.data || statsRes;
+      if (statsPayload && typeof statsPayload === 'object') {
+        setStats(statsPayload);
       }
-      if (pendingRes.data?.data?.content) {
-        setPendingInstitutes(pendingRes.data.data.content);
-      }
-      if (allRes.data?.data?.content) {
-        setAllInstitutes(allRes.data.data.content);
-      }
+
+      const pendingPayload =
+        pendingRes?.data?.content ||
+        pendingRes?.data?.data?.content ||
+        pendingRes?.content ||
+        (Array.isArray(pendingRes?.data) ? pendingRes.data : Array.isArray(pendingRes) ? pendingRes : []);
+      setPendingInstitutes(pendingPayload || []);
+
+      const allPayload =
+        allRes?.data?.content ||
+        allRes?.data?.data?.content ||
+        allRes?.content ||
+        (Array.isArray(allRes?.data) ? allRes.data : Array.isArray(allRes) ? allRes : []);
+      setAllInstitutes(allPayload || []);
     } catch (err) {
       console.error('Failed to load super admin data', err);
       setError('Failed to fetch platform institutes. Please try again.');
@@ -52,11 +62,11 @@ const SuperAdminDashboard = () => {
     setError(null);
     try {
       const res = await superAdminApi.approveInstitute(institute.id);
-      setMessage(res.data?.message || `Approved ${institute.name}! The admin can now log in.`);
+      setMessage(res?.message || res?.data?.message || `Approved ${institute.name}! The admin can now log in.`);
       loadData();
     } catch (err) {
       console.error('Approval failed', err);
-      setError(err.response?.data?.message || 'Failed to approve institute.');
+      setError(err?.message || err.response?.data?.message || 'Failed to approve institute.');
     } finally {
       setActionLoadingId(null);
     }
@@ -75,7 +85,7 @@ const SuperAdminDashboard = () => {
     setError(null);
     try {
       const res = await superAdminApi.rejectInstitute(selectedInstitute.id, rejectReason);
-      setMessage(res.data?.message || `Rejected ${selectedInstitute.name}.`);
+      setMessage(res?.message || res?.data?.message || `Rejected ${selectedInstitute.name}.`);
       setRejectModalOpen(false);
       setSelectedInstitute(null);
       loadData();
